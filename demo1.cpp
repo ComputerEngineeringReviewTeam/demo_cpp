@@ -5,11 +5,12 @@
 #include <mutex>
 #include <functional>
 
-#define LOTS_OF_THREADS 0 
 
-#define LIMITED_THREADS 1
-
-#define THREAD_POOL 2
+enum TYPES {
+    LOTS_OF_THREADS,
+    LIMITED_THREADS,
+    THREAD_POOL
+};
 
 using namespace std;
 
@@ -19,7 +20,7 @@ using namespace std;
 class Parallelizer
 {
 private:
-    int mode = LOTS_OF_THREADS;
+    TYPES mode = LOTS_OF_THREADS;
     int thread_limit = 3;
     vector<thread>threads;
     vector<bool>flags;
@@ -102,7 +103,7 @@ public:
         flags.clear();
     }
 
-    Parallelizer(int mode) :threads(), flags(), mutexes()
+    Parallelizer(TYPES mode) :threads(), flags(), mutexes()
     {
         this->mode = mode;
     }

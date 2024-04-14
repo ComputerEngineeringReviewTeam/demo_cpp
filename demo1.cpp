@@ -4,7 +4,9 @@
 #include <thread>
 #include <mutex>
 #include <functional>
+
 #include "CTPL/ctpl_stl.h"
+
 
 enum TYPES {
     LOTS_OF_THREADS,
@@ -13,10 +15,7 @@ enum TYPES {
 };
 
 using namespace std;
-void first(int id)
-{
-    cout << "HELLO " << id << endl;
-}
+
 
 class Parallelizer
 {
@@ -30,7 +29,7 @@ private:
     ctpl::thread_pool tp;
 
 public:
-   
+
     void parallelize(function<void()> func)
     {
         if (mode == LOTS_OF_THREADS)
@@ -39,6 +38,7 @@ public:
             mutex* nm = new mutex;
             mutexes.push_back(nm);
             int thread_num = threads.size();
+
             threads.emplace_back([func, thread_num, this]() {
 
 
@@ -63,6 +63,7 @@ public:
                 func();
                 
             });  // lambda
+
 
         }
 
@@ -91,18 +92,16 @@ public:
                     unique_lock<mutex> lk(*mutexes[index]);
                     cv.wait(lk, [this, index] {return flags[index]; });
 
+
                 }
 
                 threads[index].join();
                 index++;
 
-
             }
+              
         }
-        else
-        {
-            tp.stop(true);
-        }
+
         
 
 
@@ -148,7 +147,8 @@ private:
     int rows;
     int cols;
     Parallelizer* parallel_engine;
-    
+
+
 
 public:
 
@@ -225,6 +225,7 @@ public:
 
 Matrix operator*(Matrix& left, Matrix& right)
 {
+
     left.parallel_engine->flush();
     int new_rows = left.getRows();
     int new_cols = right.getCols();
@@ -319,6 +320,7 @@ int main()
             m2.setElement(index, j, i);
             index += 1.0;
         }
+
     }
     m1.setEngine(&par);
 

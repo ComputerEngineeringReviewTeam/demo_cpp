@@ -4,57 +4,24 @@
 #include <thread>
 #include <mutex>
 
-#define LOTS_OF_THREADS 0 
-
-#define LIMITED_THREADS 1
-
-#define THREAD_POOL 2
-
 using namespace std;
 
-class Matrix
-{
-private: 
-    vector<double>elements;
-    int rows;
-    int cols;
-
-public:
-
-    void setElement(double element, int col, int row)
-    {
-        elements[row * cols + col] = element;
-    }
-
-    double getElement(int col, int row)
-    {
-        return elements[row * cols + col];
-    }
-
-
-
-    Matrix(int cols, int rows) :elements()
-    {
-        elements.resize(cols * rows);
-        this->rows = rows;
-        this->cols = cols;
-    }
-
+enum TYPES {
+    LOTS_OF_THREADS,
+    LIMITED_THREADS,
+    THREAD_POOL
 };
-//TODO: W tym miejscu trzeba nadpisac operator mnozenia i zaimplementowac w nim mnozenie macierzy. Do tego w tej klasie trzeba dac pole typu Parallelizer* i tego obiektu bedzie uzywal operator mnozenia
 
-//TODO: Przeniesc wszystkie klasy do oddzielnych plikow (osobno headery i body, czyli .h i .cpp), bo klasy beda uzywac siebie nawzajem.
 
 class Parallelizer
 {
 private:
-    int mode = LOTS_OF_THREADS;
+    TYPES mode = LOTS_OF_THREADS;
     int thread_limit = 3;
     vector<thread>threads;
     vector<bool>flags;
     vector<mutex*>mutexes;
     condition_variable cv;
-
 
 public:
 
@@ -69,16 +36,17 @@ public:
             int thread_num = threads.size();
             threads.emplace_back([func, thread_num, this](){
                  
-                
                 (*func)();
-
                 {
-                    
                     lock_guard<mutex> lk(*mutexes[thread_num]);
                     flags[thread_num] = true;
                 }
                 cv.notify_all();
             });
+        }
+        else if (mode == THREAD_POOL)
+        {
+
         }
 
         //TODO: Implementacja Thread Poola - Liczba watkow to pole thread_limit. Threadpool musi byc tworzony w konstruktorze klasy i resetowany (czyli usuwany i tworzony od nowa) w metodzie flush(). 
@@ -132,13 +100,46 @@ public:
         flags.clear();
     }
 
-    Parallelizer(int mode) :threads(),flags(),mutexes()
+    Parallelizer(TYPES mode) :threads(),flags(),mutexes()
     {
         this->mode = mode;
     }
 
 };
 
+
+class Matrix
+{
+private:
+    vector<double>elements;
+    int rows;
+    int cols;
+
+public:
+
+    void setElement(double element, int col, int row)
+    {
+        elements[row * cols + col] = element;
+    }
+
+    double getElement(int col, int row)
+    {
+        return elements[row * cols + col];
+    }
+
+
+
+    Matrix(int cols, int rows) :elements()
+    {
+        elements.resize(cols * rows);
+        this->rows = rows;
+        this->cols = cols;
+    }
+
+};
+//TODO: W tym miejscu trzeba nadpisac operator mnozenia i zaimplementowac w nim mnozenie macierzy. Do tego w tej klasie trzeba dac pole typu Parallelizer* i tego obiektu bedzie uzywal operator mnozenia
+
+//TODO: Przeniesc wszystkie klasy do oddzielnych plikow (osobno headery i body, czyli .h i .cpp), bo klasy beda uzywac siebie nawzajem.
 
 
 int main()
@@ -162,10 +163,11 @@ int main()
             results2.push_back(a[i] - b[i]);
         }
     };
+
     par.parallelize(&lambda1);
     par.parallelize(&lambda2);
     par.wait_until_done();
-    int r = 1 + 2;
+   
     for (int i = 0; i < results.size(); i++)
     {
         cout << results[i] <<endl;

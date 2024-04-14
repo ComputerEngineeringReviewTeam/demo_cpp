@@ -4,7 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <functional>
-
+#include "CTPL/ctpl_stl.h"
 
 enum TYPES {
     LOTS_OF_THREADS,
@@ -13,9 +13,10 @@ enum TYPES {
 };
 
 using namespace std;
-
-
-
+void first(int id)
+{
+    cout << "HELLO " << id << endl;
+}
 
 class Parallelizer
 {
@@ -26,10 +27,10 @@ private:
     vector<bool>flags;
     vector<mutex*>mutexes;
     condition_variable cv;
-
+    ctpl::thread_pool tp;
 
 public:
-
+   
     void parallelize(function<void()> func)
     {
         if (mode == LOTS_OF_THREADS)
@@ -54,6 +55,16 @@ public:
 
                 });
         }
+        else if(mode == THREAD_POOL)
+        {
+
+            tp.push([func](int id) {
+                printf_s("W SRODKU");
+                func();
+                
+            });  // lambda
+
+        }
 
         //TODO: Implementacja Thread Poola - Liczba watkow to pole thread_limit. Threadpool musi byc tworzony w konstruktorze klasy i resetowany (czyli usuwany i tworzony od nowa) w metodzie flush(). 
         //W tym miejscu powinno byc tylko dodawanie zadan dla threadpoola.
@@ -61,6 +72,7 @@ public:
 
     }
 
+   
     void wait_until_done()
     {
         if (mode == LOTS_OF_THREADS || mode == LIMITED_THREADS)
@@ -87,13 +99,27 @@ public:
 
             }
         }
+        else
+        {
+            tp.stop(true);
+        }
+        
 
 
     }
 
+    //Metoda zmieniajaca wielkość poola
+    void resizeTP(int n)
+    {
+        tp.stop(false);
+        this->thread_limit = n;
+        tp.resize(this->thread_limit);
+    }
+
     //Metoda resetuje ca³y obiekt
     void flush()
-    {
+    {   
+        tp.stop(true);
         threads.clear();
         for (int i = 0; i < mutexes.size(); i++)
         {
@@ -103,10 +129,14 @@ public:
         flags.clear();
     }
 
-    Parallelizer(TYPES mode) :threads(), flags(), mutexes()
+    Parallelizer(TYPES mode) :threads(), flags(), mutexes(), tp(4)
     {
         this->mode = mode;
+
+        
     }
+
+    
 
 };
 
@@ -118,6 +148,7 @@ private:
     int rows;
     int cols;
     Parallelizer* parallel_engine;
+    
 
 public:
 
@@ -200,23 +231,43 @@ Matrix operator*(Matrix& left, Matrix& right)
     int subvector_number = right.getRows();
     double* first_step_vectors = (double*)malloc(sizeof(double) * (new_rows * subvector_number * new_cols));
     int offset = 0;
+    ctpl::thread_pool tpool(4);
+
     for (int i = 0; i < new_cols; i++)
     {
+
         for (int j = 0; j < subvector_number; j++)
         {
             double scalar = right.getElement(i, j);
-            left.parallel_engine->parallelize([=, &left]() {
+            /*left.parallel_engine->parallelize([=, &left]() {
+                printf_s("Poczatek: %f", scalar);
                 for (int k = 0; k < new_rows; k++)
                 {
                     first_step_vectors[offset + k] = scalar * left.getElement(j, k);
                 }
-
+                printf_s("Koniec: %f", scalar);
+                });*/
+                tpool.push([=, &left](int id) {
+                printf_s("Poczatek: %f\n", scalar);
+                for (int k = 0; k < new_rows; k++)
+                {
+                    first_step_vectors[offset + k] = scalar * left.getElement(j, k);
+                }
+                printf_s("Koniec: %f\n", scalar);
                 });
+
             offset += new_rows;
         }
     }
+
+    tpool.stop(true);
     left.parallel_engine->wait_until_done();
     left.parallel_engine->flush();
+
+    for (int i = 0;i < (new_rows * subvector_number * new_cols);i++)
+    {
+        cout << first_step_vectors[i] << endl;
+    }
     Matrix result(new_cols, new_rows);
 
     for (int i = 0; i < new_cols; i++)
@@ -244,7 +295,9 @@ Matrix operator*(Matrix& left, Matrix& right)
 
 int main()
 {
-    Parallelizer par(LOTS_OF_THREADS);
+    Parallelizer par(THREAD_POOL);
+
+    
 
     Matrix m1(3, 2);
     double index = 1;

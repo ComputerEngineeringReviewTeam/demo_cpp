@@ -5,7 +5,7 @@
 #include <mutex>
 #include <functional>
 
-#include "CTPL/ctpl_stl.h"
+#include "ctpl.h"
 
 
 enum TYPES {
@@ -26,7 +26,7 @@ private:
     vector<bool>flags;
     vector<mutex*>mutexes;
     condition_variable cv;
-    ctpl::thread_pool tp;
+    ctpl::thread_pool *tp;
 
 public:
 
@@ -45,7 +45,6 @@ public:
                 func();
 
 
-
                 {
                     lock_guard<mutex> lk(*mutexes[thread_num]);
 
@@ -58,8 +57,7 @@ public:
         else if(mode == THREAD_POOL)
         {
 
-            tp.push([func](int id) {
-                printf_s("W SRODKU");
+            tp->push([func](int id) {
                 func();
                 
             });  // lambda
@@ -92,7 +90,6 @@ public:
                     unique_lock<mutex> lk(*mutexes[index]);
                     cv.wait(lk, [this, index] {return flags[index]; });
 
-
                 }
 
                 threads[index].join();
@@ -101,42 +98,53 @@ public:
             }
               
         }
-
-        
-
+        else
+        {
+            tp->stop(true);
+        }
 
     }
 
     //Metoda zmieniajaca wielkość poola
     void resizeTP(int n)
     {
-        tp.stop(false);
+        tp->stop(false);
         this->thread_limit = n;
-        tp.resize(this->thread_limit);
+        tp->resize(this->thread_limit);
     }
 
-    //Metoda resetuje ca³y obiekt
+    //Metoda resetuje caly obiekt
     void flush()
     {   
-        tp.stop(true);
-        threads.clear();
-        for (int i = 0; i < mutexes.size(); i++)
+        if (this->mode != THREAD_POOL)
         {
-            delete mutexes[i];
+            threads.clear();
+            for (int i = 0; i < mutexes.size(); i++)
+            {
+                delete mutexes[i];
+            }
+            mutexes.clear();
+            flags.clear();
         }
-        mutexes.clear();
-        flags.clear();
-    }
-
-    Parallelizer(TYPES mode) :threads(), flags(), mutexes(), tp(4)
-    {
-        this->mode = mode;
-
+        else
+        {
+            tp= new ctpl::thread_pool(this->thread_limit);
+        }
         
     }
 
-    
+    Parallelizer(TYPES mode) :threads(), flags(), mutexes()
+    {
+        this->mode = mode;
+        tp = new ctpl::thread_pool(this->thread_limit);
+    }
 
+    Parallelizer(TYPES mode, int n) :threads(), flags(), mutexes()
+    {
+        this->mode = mode;
+        this->thread_limit = n;
+        tp = new ctpl::thread_pool(this->thread_limit);
+    }
 };
 
 
@@ -232,7 +240,6 @@ Matrix operator*(Matrix& left, Matrix& right)
     int subvector_number = right.getRows();
     double* first_step_vectors = (double*)malloc(sizeof(double) * (new_rows * subvector_number * new_cols));
     int offset = 0;
-    ctpl::thread_pool tpool(4);
 
     for (int i = 0; i < new_cols; i++)
     {
@@ -240,35 +247,22 @@ Matrix operator*(Matrix& left, Matrix& right)
         for (int j = 0; j < subvector_number; j++)
         {
             double scalar = right.getElement(i, j);
-            /*left.parallel_engine->parallelize([=, &left]() {
-                printf_s("Poczatek: %f", scalar);
+            left.parallel_engine->parallelize([=, &left]() {
+                
                 for (int k = 0; k < new_rows; k++)
                 {
                     first_step_vectors[offset + k] = scalar * left.getElement(j, k);
                 }
-                printf_s("Koniec: %f", scalar);
-                });*/
-                tpool.push([=, &left](int id) {
-                printf_s("Poczatek: %f\n", scalar);
-                for (int k = 0; k < new_rows; k++)
-                {
-                    first_step_vectors[offset + k] = scalar * left.getElement(j, k);
-                }
-                printf_s("Koniec: %f\n", scalar);
+                
                 });
-
+           
             offset += new_rows;
         }
     }
 
-    tpool.stop(true);
     left.parallel_engine->wait_until_done();
     left.parallel_engine->flush();
 
-    for (int i = 0;i < (new_rows * subvector_number * new_cols);i++)
-    {
-        cout << first_step_vectors[i] << endl;
-    }
     Matrix result(new_cols, new_rows);
 
     for (int i = 0; i < new_cols; i++)
@@ -287,6 +281,7 @@ Matrix operator*(Matrix& left, Matrix& right)
         };
         left.parallel_engine->parallelize(lambda);
     }
+    
     left.parallel_engine->wait_until_done();
     left.parallel_engine->flush();
     free(first_step_vectors);

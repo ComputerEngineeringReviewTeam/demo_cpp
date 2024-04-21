@@ -18,6 +18,15 @@
     <ClInclude Include="ctpl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Parallelizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="demo1.cpp">
@@ -25,8 +34,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ThreadPool.cpp">
-      <Filter>Source Files</Filter>
+    <None Include="example.h">
+      <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -127,7 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ThreadPool.cpp">
+    <None Include="example.h">
       <FileType>Text</FileType>
     </None>
     <ClCompile Include="demo1.cpp">
@@ -136,6 +136,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ctpl.h" />
+    <ClInclude Include="Matrix.h" />
+    <ClInclude Include="Parallelizer.h" />
+    <ClInclude Include="test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

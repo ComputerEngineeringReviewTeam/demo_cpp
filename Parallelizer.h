@@ -4,7 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <functional>
-#include "ctpl.h"
+//TODO: Includuj biblioteke CTPL (C++ Thread Pool Library)
 
 
 enum TYPES {
@@ -20,7 +20,7 @@ private:
     int thread_limit = 3;
     vector<thread>threads;
     vector<bool>flags;
-    ctpl::thread_pool* tp;
+    //TODO: Utworz zmienna przechowujaca wskaznik na thread poola.
 
 public:
 
@@ -52,7 +52,7 @@ public:
         }
         else if(mode == THREAD_POOL)
         {
-            tp->stop(true);
+            //TODO: Tutaj czekaj az Thread Pool wykona wszystkie zadania.
         }
 
     }
@@ -74,9 +74,7 @@ public:
         else if (mode == THREAD_POOL)
         {
 
-            tp->push([func](int id) {
-                func();
-            });
+            //TODO: Tutaj dodaj do kolejki thread poola funktor 'func'. Pamietaj, ze funkcje dodawane do thread poola w CTPL musza brac argument typu int (id watku), a tymczasem 'func' nie bierze zadnych argumentow. Zalecamy uzyc funkcji lambda. 
 
 
         }
@@ -95,8 +93,7 @@ public:
         }
         else
         {
-            delete tp;
-            tp = new ctpl::thread_pool(this->thread_limit);
+            //TODO: Usun thread poola i utworz nowego (wskaznik powienien byc polem klasy, liczba watkow == zmienna 'thread_limit')
         }
     }
 
@@ -105,22 +102,19 @@ public:
     {
         if (mode == THREAD_POOL)
         {
-            tp = new ctpl::thread_pool(this->thread_limit);
+            //TODO: Utworz nowego thread poola (liczba watkow == zmienna 'thread_limit')
         }
 
     }
 
-    Parallelizer(TYPES mode, int n) :threads(), flags(), mode(mode)
+    Parallelizer(TYPES mode, int n) :Parallelizer(mode)
     {
         this->thread_limit = n;
-        if (mode == THREAD_POOL)
-        {
-            tp = new ctpl::thread_pool(this->thread_limit);
-        }
+        
     }
 
     ~Parallelizer()
     {
-        delete tp;
+        //TODO: Usun thread poola
     }
 };

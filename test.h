@@ -4,9 +4,11 @@
 
 using Time = std::chrono::steady_clock;
 
-const int THREAD_LIMIT = 2;
+//Manipulate this value to regulate Thread Pool size
+const int THREAD_LIMIT = 4;
 
-const int n = 4;
+//Manipulate this value to regulate size of matrices being multiplied.
+const int n = 10;
 
 Matrix generateMatrix(int rows, int cols)
 {
@@ -54,7 +56,8 @@ void test()
     m1.setEngine(&thread_pool);
     printf("Obliczanie m1*m2 przy uzyciu Thread Poola na %d watkach...\n", THREAD_LIMIT);
     time = Time::now();
-    product = m1 * m2;
+    //TODO: Po wykonaniu wsyzstkih (7) zadan w pliku Perallelizer.h odkomentuj ponizsza linie (polecamy skorzystac z przykladu w pliku example.h):
+    //product = m1 * m2;
     now = Time::now();
     cout << (now - time).count() <<"ns"<< endl << endl;
     
